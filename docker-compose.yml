@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: fabrica_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: fabrica
+      MYSQL_USER: user
+      MYSQL_PASSWORD: user
+    ports:
+      - "3307:3306"
+    volumes:
+      - ./mysql_data:/var/lib/mysql
+    networks:
+      - fabrica_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    container_name: fabrica_app
+    restart: always
+    command: npm run dev
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DB_HOST=fabrica_db
+      - DB_USER=user
+      - DB_PASSWORD=user
+      - DB_NAME=fabrica
+      - DB_PORT=3306
+    volumes:
+      - .:/app
+      - /app/node_modules
+    networks:
+      - fabrica_network
+
+networks:
+  fabrica_network:
+    driver: bridge
